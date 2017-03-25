@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.min.css">
+
+        <style>
+          canvas {
+            width: 300px;
+            height: 300px;
+          }
+
+          .js_controls {
+            display: none;
+          }
+        </style>
+    </head>
+    <body>
+      <h1>Canny Edge Detector</h1>
+
+      <input type="file" class="button js_image">
+
+      <div class="js_controls">
+        <input type="text" class="js_lt" placeholder="Lower Treshold">
+        <input type="text" class="js_ut" placeholder="Upper Treshold">
+        <button class="button js_submit">Find Edges</button>
+        <div class="js_status"></div>
+      </div>
+
+      <section>
+        <h1>Starting Image</h1>
+        <canvas class="image--from"></canvas>
+      </section>
+
+      <section>
+        <h1>Grayscale</h1>
+        <canvas class="image--grayscale"></canvas>
+      </section>
+
+      <section>
+        <h1>Blurred</h1>
+        <canvas class="image--blurred"></canvas>
+      </section>
+
+      <section>
+        <h1>X Derived</h1>
+        <canvas class="image--x-derived"></canvas>
+      </section>
+
+      <section>
+        <h1>Y Dervied</h1>
+        <canvas class="image--y-derived"></canvas>
+      </section>
+
+      <section>
+        <h1>Result</h1>
+        <canvas class="image--result"></canvas>
+      </section>
+
+      <script src="./main.js"></script>
+      <script>
+        window.appData = {}
+
+        const canvasFrom = document.querySelector('.image--from')
+        const canvasGrayscale = document.querySelector('.image--grayscale')
+        const canvasResult = document.querySelector('.image--result')
+        const canvasBlurred = document.querySelector('.image--blurred')
+        const canvasXDerived = document.querySelector('.image--x-derived')
+        const canvasYDerived = document.querySelector('.image--y-derived')
+
+        const $file = document.querySelector('.js_image')
+        const $submit = document.querySelector('.js_submit')
+        const $controls = document.querySelector('.js_controls')
+        const $status = document.querySelector('.js_status')
+        const $ut = document.querySelector('.js_ut')
+        const $lt = document.querySelector('.js_lt')
+
+        $file.addEventListener('change', event => {
+          const file = $file.files[0]
+          readFileAsDataURL(file)
+            .then(loadImage)
+            .then(setCanvasSizeFromImage(canvasFrom))
+            .then(drawImageOnCanvas(canvasFrom))
+            .then(setCanvasSizeFromImage(canvasGrayscale))
+            .then(setCanvasSizeFromImage(canvasResult))
+            .then(setCanvasSizeFromImage(canvasBlurred))
+            .then(setCanvasSizeFromImage(canvasYDerived))
+            .then(setCanvasSizeFromImage(canvasXDerived))
+            .then(img => {
+              window.appData = {
+                img,
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              }
+            })
+            .then(showControls)
+        })
+
+        $submit.addEventListener('click', event => {
+
+          console.time('Find Edges')
+
+          drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height)
+          toConvolutionForImg = toConvolution(window.appData.width, window.appData.height)
+
+          window.appData.ut = parseFloat($ut.value, 10)
+          window.appData.lt = parseFloat($lt.value, 10)
+
+          setProcessingStatus('1/9 Getting image data')
+          const imgd = canvasFrom
+            .getContext('2d')
+            .getImageData(0, 0, window.appData.width, window.appData.height)
+
+          const pixels = imgd.data
+
+          setProcessingStatus('2/9 Converting to Grayscale')
+          const grayscale = toPixels(toGrayscale(pixels, window.appData.width, window.appData.height))
+          drawBytesOnCanvasForImg(canvasGrayscale, grayscale)
+
+          setProcessingStatus('3/9 Normalizing pixel values')
+          const normalized = toNormalized(grayscale)
+
+          setProcessingStatus('4/9 Blurring image')
+          const blurred = toConvolutionForImg(gaussMatrix, 2, normalized)
+          drawBytesOnCanvasForImg(canvasBlurred, toPixels(toDenormalized(blurred)))
+
+          setProcessingStatus('5/9 Creating X axis derivation')
+          const xDerived = toConvolutionForImg(xMatrix, 1, blurred)
+          drawBytesOnCanvasForImg(canvasXDerived, toPixels(toDenormalized(xDerived)))
+
+          setProcessingStatus('6/9 Creating Y axis derivation')
+          const yDerived = toConvolutionForImg(yMatrix, 1, blurred)
+          drawBytesOnCanvasForImg(canvasYDerived, toPixels(toDenormalized(yDerived)))
+
+          setProcessingStatus('7/9 Calculating Gradient magnitude')
+          const gradientMagnitude = toGradientMagnitude(xDerived, yDerived, window.appData.width, window.appData.height, window.appData.lt, window.appData.ut)
+
+          setProcessingStatus('8/9 Denormalizing image values')
+
+          setProcessingStatus('9/9 Converting image values to pixels')
+          drawBytesOnCanvasForImg(canvasResult, toPixels(toDenormalized(gradientMagnitude)))
+
+          console.timeEnd('Find Edges')
+
+          setProcessingStatus('Done!')
+        })
+
+        function showControls() {
+          $controls.style.display = 'inline-block'
+          setProcessingStatus('')
+        }
+
+        function setProcessingStatus(status) {
+          window.appData.status = status
+          $status.innerText = status
+        }
+
+      </script>
+    </body>
+</html>
