@@ -12,7 +12,19 @@
             height: 300px;
           }
 
+          section {
+            display: inline-block;
+          }
+
           .js_controls {
+            display: none;
+          }
+
+          .controls--blocked *:not(.cancel) {
+            opacity: 0.5;
+          }
+
+          .cancel {
             display: none;
           }
         </style>
@@ -26,12 +38,18 @@
         <input type="text" class="js_lt" placeholder="Lower Treshold">
         <input type="text" class="js_ut" placeholder="Upper Treshold">
         <button class="button js_submit">Find Edges</button>
+        <button class="button cancel js_cancel">Cancel</button>
         <div class="js_status"></div>
       </div>
 
       <section>
         <h1>Starting Image</h1>
         <canvas class="image--from"></canvas>
+      </section>
+
+      <section>
+        <h1>Result</h1>
+        <canvas class="image--result"></canvas>
       </section>
 
       <section>
@@ -54,11 +72,6 @@
         <canvas class="image--y-derived"></canvas>
       </section>
 
-      <section>
-        <h1>Result</h1>
-        <canvas class="image--result"></canvas>
-      </section>
-
       <script src="./main.js"></script>
       <script>
         window.appData = {}
@@ -76,6 +89,13 @@
         const $status = document.querySelector('.js_status')
         const $ut = document.querySelector('.js_ut')
         const $lt = document.querySelector('.js_lt')
+        const $cancel = document.querySelector('.js_cancel')
+
+        let worker = new Worker('worker.js')
+
+        function initWorker () {
+          worker.addEventListener('message', onWorkerMessage, false)
+        }
 
         $file.addEventListener('change', event => {
           const file = $file.files[0]
@@ -100,61 +120,81 @@
 
         $submit.addEventListener('click', event => {
 
-          console.time('Find Edges')
-
-          drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height)
-          toConvolutionForImg = toConvolution(window.appData.width, window.appData.height)
-
           window.appData.ut = parseFloat($ut.value, 10)
           window.appData.lt = parseFloat($lt.value, 10)
 
-          setProcessingStatus('1/9 Getting image data')
+          worker.postMessage({
+            cmd: 'appData',
+            data: {
+              width: window.appData.width,
+              height: window.appData.height,
+              ut: window.appData.ut,
+              lt: window.appData.lt
+            } 
+          })
+
           const imgd = canvasFrom
             .getContext('2d')
             .getImageData(0, 0, window.appData.width, window.appData.height)
 
           const pixels = imgd.data
+          setProcessingStatus('1/7 Loaded image data')
+          blockControls()
 
-          setProcessingStatus('2/9 Converting to Grayscale')
-          const grayscale = toPixels(toGrayscale(pixels, window.appData.width, window.appData.height))
-          drawBytesOnCanvasForImg(canvasGrayscale, grayscale)
-
-          setProcessingStatus('3/9 Normalizing pixel values')
-          const normalized = toNormalized(grayscale)
-
-          setProcessingStatus('4/9 Blurring image')
-          const blurred = toConvolutionForImg(gaussMatrix, 2, normalized)
-          drawBytesOnCanvasForImg(canvasBlurred, toPixels(toDenormalized(blurred)))
-
-          setProcessingStatus('5/9 Creating X axis derivation')
-          const xDerived = toConvolutionForImg(xMatrix, 1, blurred)
-          drawBytesOnCanvasForImg(canvasXDerived, toPixels(toDenormalized(xDerived)))
-
-          setProcessingStatus('6/9 Creating Y axis derivation')
-          const yDerived = toConvolutionForImg(yMatrix, 1, blurred)
-          drawBytesOnCanvasForImg(canvasYDerived, toPixels(toDenormalized(yDerived)))
-
-          setProcessingStatus('7/9 Calculating Gradient magnitude')
-          const gradientMagnitude = toGradientMagnitude(xDerived, yDerived, window.appData.width, window.appData.height, window.appData.lt, window.appData.ut)
-
-          setProcessingStatus('8/9 Denormalizing image values')
-
-          setProcessingStatus('9/9 Converting image values to pixels')
-          drawBytesOnCanvasForImg(canvasResult, toPixels(toDenormalized(gradientMagnitude)))
-
-          console.timeEnd('Find Edges')
-
-          setProcessingStatus('Done!')
+          worker.postMessage({ cmd: 'imgData', data: pixels })
         })
 
-        function showControls() {
+        $cancel.addEventListener('click', event => {
+          worker.terminate()
+          setProcessingStatus('')
+          unblockControls()
+          worker = new Worker('worker.js')
+          initWorker()
+        })
+
+        function showControls () {
           $controls.style.display = 'inline-block'
           setProcessingStatus('')
         }
 
-        function setProcessingStatus(status) {
+        function blockControls () {
+          $controls.classList.add('controls--blocked')
+          $cancel.style.display = 'inline-block'
+        }
+
+        function unblockControls () {
+          $controls.classList.remove('controls--blocked')
+          $cancel.style.display = ''
+        }
+
+        function setProcessingStatus (status) {
           window.appData.status = status
           $status.innerText = status
+        }
+
+        function onWorkerMessage (e) {
+          const drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height)
+
+          if (e.data.type === 'grayscale') {
+            setProcessingStatus('2/7 Converted to Grayscale')
+            drawBytesOnCanvasForImg(canvasGrayscale, e.data.data)
+          } else if (e.data.type === 'normalized') {
+            setProcessingStatus('3/7 Normalized pixel values')
+          } else if (e.data.type === 'blurred') {
+            setProcessingStatus('4/7 Blurred image')
+            drawBytesOnCanvasForImg(canvasBlurred, e.data.data)
+          } else if (e.data.type === 'xAxis') {
+            setProcessingStatus('5/7 Created X axis derivation')
+            drawBytesOnCanvasForImg(canvasXDerived, e.data.data)
+          } else if (e.data.type === 'yAxis') {
+            setProcessingStatus('6/7 Created Y axis derivation')
+            drawBytesOnCanvasForImg(canvasYDerived, e.data.data)
+          } else if (e.data.type === 'gradientMagnitude') {
+            setProcessingStatus('7/7 Calculated Gradient magnitude')
+            drawBytesOnCanvasForImg(canvasResult, e.data.data)
+            setProcessingStatus('Done!')
+            unblockControls()
+          }
         }
 
       </script>
