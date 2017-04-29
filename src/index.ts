@@ -49,7 +49,6 @@ $file.addEventListener('change', event => {
         canvas.style.height = newWidth * (canvas.height / canvas.width) + 'px'
       })
     })
-    .then(() => activateImage('js_image--from'))
     .then(showControls)
 })
 
@@ -77,6 +76,7 @@ $submit.addEventListener('click', event => {
   const pixels = imgd.data
   setProcessingStatus('1/7 Loaded image data')
   blockControls()
+  resetImageNav()
 
   worker.postMessage({ cmd: 'imgData', data: pixels })
 })
@@ -87,6 +87,7 @@ $cancel.addEventListener('click', event => {
   setProcessingStatus('')
   unblockControls()
   initWorker()
+  resetImageNav()
 })
 
 function showControls () {
@@ -94,6 +95,7 @@ function showControls () {
   $controls.style.display = 'inline-block'
   $imageNav.classList.add('image-nav--active')
   $result.style.height = canvasFrom.style.height
+  resetImageNav()
   setProcessingStatus('Waiting for start.')
 }
 
@@ -105,6 +107,11 @@ function blockControls () {
 function unblockControls () {
   $controls.classList.remove('controls--blocked')
   $cancel.style.display = ''
+}
+
+function resetImageNav () {
+  [...document.querySelectorAll('.image-nav__item--active')].forEach(el => el.classList.remove('image-nav__item--active'))
+  document.querySelector(`[data-target="js_image--from"]`).classList.add('image-nav__item--active')
 }
 
 function setProcessingStatus (status: string) {
