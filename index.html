@@ -7,11 +7,19 @@
         <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.min.css">
 
         <style>
+          * {
+            box-sizing: border-box;
+          }
+
           body {
             padding: 20px;
           }
 
           .js_controls {
+            display: none;
+          }
+
+          .js_status {
             display: none;
           }
 
@@ -87,6 +95,7 @@
           }
 
           .image-nav {
+            margin-top: 2rem;
             display: none;
           }
 
@@ -97,15 +106,25 @@
           .image-nav > ul {
             display: inline-block;
             list-style-type: none;
+            margin: 0;
           }
 
           .image-nav__item {
+            margin: 0;
             display: inline-block;
             width: 2rem;
             height: 2rem;
             cursor: pointer;
-            background: #9b4dca;
+            background: #DADADA;
             border-radius: 50%;
+          }
+
+          .image-nav__item--active {
+            background: #9b4dca;
+          }
+
+          .result {
+            padding: 0;
           }
 
           .result .image--active {
@@ -157,6 +176,21 @@
         </div>
 
         <div class="row">
+          <div class="column ta-c">
+            <div class="image-nav js_image-nav">
+              <ul>
+                <li data-target="js_image--from" class="image-nav__item" title="Start"></li>
+                <li data-target="js_image--grayscale" class="image-nav__item" title="Grayscale"></li>
+                <li data-target="js_image--blurred" class="image-nav__item" title="Blurred"></li>
+                <li data-target="js_image--x-derived" class="image-nav__item" title="X derived"></li>
+                <li data-target="js_image--y-derived" class="image-nav__item" title="Y derived"></li>
+                <li data-target="js_image--result" class="image-nav__item" title="Result"></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
           <div class="column result">
             <section class="js_image--from">
               <canvas class="image--from"></canvas>
@@ -181,21 +215,6 @@
             <section class="js_image--result">
               <canvas class="image--result"></canvas>
             </section>
-          </div>
-        </div>
-        
-        <div class="row">
-          <div class="column ta-c">
-            <div class="image-nav js_image-nav">
-              <ul>
-                <li data-target="js_image--start" class="image-nav__item" title="Start"></li>
-                <li data-target="js_image--grayscale" class="image-nav__item" title="Grayscale"></li>
-                <li data-target="js_image--blurred" class="image-nav__item" title="Blurred"></li>
-                <li data-target="js_image--x-derived" class="image-nav__item" title="X derived"></li>
-                <li data-target="js_image--y-derived" class="image-nav__item" title="Y derived"></li>
-                <li data-target="js_image--result" class="image-nav__item" title="Result"></li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>

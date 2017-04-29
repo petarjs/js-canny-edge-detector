@@ -15,6 +15,7 @@ const $status = document.querySelector('.js_status') as HTMLElement
 const $ut = document.querySelector('.js_ut') as HTMLInputElement
 const $lt = document.querySelector('.js_lt') as HTMLInputElement
 const $cancel = document.querySelector('.js_cancel') as HTMLElement
+const $result = document.querySelector('.result') as HTMLElement
 
 let worker
 
@@ -40,6 +41,13 @@ $file.addEventListener('change', event => {
         width: img.naturalWidth,
         height: img.naturalHeight
       }
+    })
+    .then(() => {
+      [...document.querySelectorAll('canvas')].forEach(canvas => {
+        let newWidth = Math.min($result.clientWidth, canvas.width)
+        canvas.style.width = newWidth + 'px'
+        canvas.style.height = newWidth * (canvas.height / canvas.width) + 'px'
+      })
     })
     .then(() => activateImage('js_image--from'))
     .then(showControls)
@@ -82,9 +90,11 @@ $cancel.addEventListener('click', event => {
 })
 
 function showControls () {
+  $status.style.display = 'inline-block'
   $controls.style.display = 'inline-block'
   $imageNav.classList.add('image-nav--active')
-  setProcessingStatus('')
+  $result.style.height = canvasFrom.style.height
+  setProcessingStatus('Waiting for start.')
 }
 
 function blockControls () {
@@ -103,6 +113,10 @@ function setProcessingStatus (status: string) {
 }
 
 function activateImage (className) {
+  let imageNavItem = document.querySelector(`[data-target="${className}"]`)
+  if (imageNavItem) {
+    imageNavItem.classList.add('image-nav__item--active')
+  }
   document.querySelector(`.${className}`).classList.add(`image--active`)
 }
 
@@ -135,3 +149,12 @@ function onWorkerMessage (e: ServiceWorkerMessageEvent) {
     unblockControls()
   }
 }
+
+document.querySelector('.js_image-nav').addEventListener('click', e => {
+  let eventTarget = (e.target as HTMLElement)
+  if (eventTarget.classList.contains('image-nav__item--active')) {
+    let target = eventTarget.dataset.target
+    Array.from(document.querySelectorAll('.image--active')).forEach(el => el.classList.remove('image--active'))
+    document.querySelector(`.${target}`).classList.add(`image--active`)
+  }
+})

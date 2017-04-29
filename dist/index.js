@@ -13,6 +13,7 @@ const $status = document.querySelector('.js_status');
 const $ut = document.querySelector('.js_ut');
 const $lt = document.querySelector('.js_lt');
 const $cancel = document.querySelector('.js_cancel');
+const $result = document.querySelector('.result');
 let worker;
 function initWorker() {
     worker = new Worker('./dist/worker.js');
@@ -35,6 +36,13 @@ $file.addEventListener('change', event => {
             width: img.naturalWidth,
             height: img.naturalHeight
         };
+    })
+        .then(() => {
+        [...document.querySelectorAll('canvas')].forEach(canvas => {
+            let newWidth = Math.min($result.clientWidth, canvas.width);
+            canvas.style.width = newWidth + 'px';
+            canvas.style.height = newWidth * (canvas.height / canvas.width) + 'px';
+        });
     })
         .then(() => activateImage('js_image--from'))
         .then(showControls);
@@ -68,9 +76,11 @@ $cancel.addEventListener('click', event => {
     initWorker();
 });
 function showControls() {
+    $status.style.display = 'inline-block';
     $controls.style.display = 'inline-block';
     $imageNav.classList.add('image-nav--active');
-    setProcessingStatus('');
+    $result.style.height = canvasFrom.style.height;
+    setProcessingStatus('Waiting for start.');
 }
 function blockControls() {
     $controls.classList.add('controls--blocked');
@@ -85,6 +95,10 @@ function setProcessingStatus(status) {
     $status.innerText = status;
 }
 function activateImage(className) {
+    let imageNavItem = document.querySelector(`[data-target="${className}"]`);
+    if (imageNavItem) {
+        imageNavItem.classList.add('image-nav__item--active');
+    }
     document.querySelector(`.${className}`).classList.add(`image--active`);
 }
 function onWorkerMessage(e) {
@@ -120,3 +134,11 @@ function onWorkerMessage(e) {
         unblockControls();
     }
 }
+document.querySelector('.js_image-nav').addEventListener('click', e => {
+    let eventTarget = e.target;
+    if (eventTarget.classList.contains('image-nav__item--active')) {
+        let target = eventTarget.dataset.target;
+        Array.from(document.querySelectorAll('.image--active')).forEach(el => el.classList.remove('image--active'));
+        document.querySelector(`.${target}`).classList.add(`image--active`);
+    }
+});

@@ -58,8 +58,6 @@ function _setCanvasSizeFromImage(canvas, image) {
     canvas.getContext('2d').clearRect(0, 0, image.width, image.height);
     canvas.height = image.height;
     canvas.width = image.width;
-    canvas.style.width = ratio * Math.min(MAX_IMAGE_HEIGHT, canvas.height) + 'px';
-    canvas.style.height = Math.min(MAX_IMAGE_HEIGHT, canvas.height) + 'px';
     return image;
 }
 var setCanvasSizeFromImage = curry(_setCanvasSizeFromImage);
