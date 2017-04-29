@@ -10,14 +10,16 @@ const canvasYDerived = document.querySelector('.image--y-derived') as HTMLCanvas
 const $file = document.querySelector('.js_image') as HTMLInputElement
 const $submit = document.querySelector('.js_submit') as HTMLElement
 const $controls = document.querySelector('.js_controls') as HTMLElement
+const $imageNav = document.querySelector('.js_image-nav') as HTMLElement
 const $status = document.querySelector('.js_status') as HTMLElement
 const $ut = document.querySelector('.js_ut') as HTMLInputElement
 const $lt = document.querySelector('.js_lt') as HTMLInputElement
 const $cancel = document.querySelector('.js_cancel') as HTMLElement
 
-let worker = new Worker('./dist/worker.js')
+let worker
 
 function initWorker () {
+  worker = new Worker('./dist/worker.js')
   worker.addEventListener('message', onWorkerMessage, false)
 }
 
@@ -39,6 +41,7 @@ $file.addEventListener('change', event => {
         height: img.naturalHeight
       }
     })
+    .then(() => activateImage('js_image--from'))
     .then(showControls)
 })
 
@@ -46,6 +49,8 @@ $submit.addEventListener('click', event => {
 
   window.appData.ut = parseFloat($ut.value)
   window.appData.lt = parseFloat($lt.value)
+
+  initWorker()
 
   worker.postMessage({
     cmd: 'appData',
@@ -70,14 +75,15 @@ $submit.addEventListener('click', event => {
 
 $cancel.addEventListener('click', event => {
   worker.terminate()
+  worker.removeEventListener('message', onWorkerMessage, false)
   setProcessingStatus('')
   unblockControls()
-  worker = new Worker('./dist/worker.js')
   initWorker()
 })
 
 function showControls () {
   $controls.style.display = 'inline-block'
+  $imageNav.classList.add('image-nav--active')
   setProcessingStatus('')
 }
 
@@ -96,26 +102,35 @@ function setProcessingStatus (status: string) {
   $status.innerText = status
 }
 
+function activateImage (className) {
+  document.querySelector(`.${className}`).classList.add(`image--active`)
+}
+
 function onWorkerMessage (e: ServiceWorkerMessageEvent) {
   const drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height)
 
   if (e.data.type === 'grayscale') {
     setProcessingStatus('2/7 Converted to Grayscale')
     drawBytesOnCanvasForImg(canvasGrayscale, e.data.data)
+    activateImage('js_image--grayscale')
   } else if (e.data.type === 'normalized') {
     setProcessingStatus('3/7 Normalized pixel values')
   } else if (e.data.type === 'blurred') {
     setProcessingStatus('4/7 Blurred image')
     drawBytesOnCanvasForImg(canvasBlurred, e.data.data)
+    activateImage('js_image--blurred')
   } else if (e.data.type === 'xAxis') {
     setProcessingStatus('5/7 Created X axis derivation')
     drawBytesOnCanvasForImg(canvasXDerived, e.data.data)
+    activateImage('js_image--x-derived')
   } else if (e.data.type === 'yAxis') {
     setProcessingStatus('6/7 Created Y axis derivation')
     drawBytesOnCanvasForImg(canvasYDerived, e.data.data)
+    activateImage('js_image--y-derived')
   } else if (e.data.type === 'gradientMagnitude') {
     setProcessingStatus('7/7 Calculated Gradient magnitude')
     drawBytesOnCanvasForImg(canvasResult, e.data.data)
+    activateImage('js_image--result')
     setProcessingStatus('Done!')
     unblockControls()
   }
