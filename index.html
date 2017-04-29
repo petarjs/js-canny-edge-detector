@@ -68,7 +68,7 @@
         <canvas class="image--result"></canvas>
       </section>
 
-      <script src="./main.js"></script>
+      <script src="./dist/main.js"></script>
       <script>
         window.appData = {}
 
@@ -87,7 +87,7 @@
         const $lt = document.querySelector('.js_lt')
         const $cancel = document.querySelector('.js_cancel')
 
-        let worker = new Worker('worker.js')
+        let worker = new Worker('./dist/worker.js')
 
         function initWorker () {
           worker.addEventListener('message', onWorkerMessage, false)
@@ -144,7 +144,7 @@
           worker.terminate()
           setProcessingStatus('')
           unblockControls()
-          worker = new Worker('worker.js')
+          worker = new Worker('./dist/worker.js')
           initWorker()
         })
 

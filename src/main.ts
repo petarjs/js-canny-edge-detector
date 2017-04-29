@@ -14,7 +14,7 @@ const gaussMatrix = [
 const xMatrix = [ [ 1, 0, -1 ], [ 2, 0, -2 ], [ 1, 0, -1 ] ]
 const yMatrix = [ [ -1, -2, -1 ], [ 0, 0, 0 ], [ 1, 2, 1 ] ]
 
-function curry(f, n) {
+function curry(f: Function, n?: number): Function {
   var args = Array.prototype.slice.call(arguments, 0);
   if (typeof n === 'undefined')
     args[1] = f.length;
@@ -25,20 +25,20 @@ function curry(f, n) {
   };
 }
 
-function loadImage(imageUrl) {
+function loadImage(imageUrl: string) {
   return new Promise ((resolve, reject) => {
     console.time('loadImage')
     const img = new Image()
     img.src = imageUrl
     img.crossOrigin = 'Anonymous'
-    img.onload = function(){
+    img.onload = function () {
       console.timeEnd('loadImage')
       resolve(img)
     }
   })
 }
 
-function readFileAsDataURL(file) {
+function readFileAsDataURL(file: Blob) {
   return new Promise((resolve, reject) => {
     var reader  = new FileReader();
 
@@ -61,9 +61,9 @@ function _drawImageOnCanvas(canvas, image) {
 
 var drawImageOnCanvas = curry(_drawImageOnCanvas)
 
-function _setCanvasSizeFromImage(canvas, image) {
+function _setCanvasSizeFromImage(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   const ratio = image.naturalWidth / image.naturalHeight
-  canvas.style = {}
+  canvas.style.width = ''
   canvas.getContext('2d').clearRect(0, 0, image.width, image.height);
   canvas.height = image.height
   canvas.width = image.width
@@ -73,7 +73,7 @@ function _setCanvasSizeFromImage(canvas, image) {
 
 var setCanvasSizeFromImage = curry(_setCanvasSizeFromImage)
 
-function _drawBytesOnCanvas(width, height, canvas, bytes) {
+function _drawBytesOnCanvas(width: number, height: number, canvas: HTMLCanvasElement, bytes: Uint8Array) {
   canvas
     .getContext('2d')
     .putImageData(
@@ -86,7 +86,7 @@ function _drawBytesOnCanvas(width, height, canvas, bytes) {
 
 var drawBytesOnCanvas = curry(_drawBytesOnCanvas)
 
-function toGrayscale(bytes, width, height) {
+function toGrayscale(bytes: Uint8Array, width: number, height: number): Array<number> {
   console.time('toGrayscale')
   const grayscale = []
   for (let i = 0; i < bytes.length; i += 4) {
@@ -98,7 +98,7 @@ function toGrayscale(bytes, width, height) {
   return grayscale
 }
 
-function _toConvolution (width, height, kernel, radius, bytes) {
+function _toConvolution (width: number, height: number, kernel: number[][], radius: number, bytes: Uint8Array): number[] {
   console.time('toConvolution')
   const convolution = []
   let newValue, idxX, idxY, kernx, kerny
@@ -123,14 +123,15 @@ function _toConvolution (width, height, kernel, radius, bytes) {
 
   return convolution
 }
-var toConvolution = curry(_toConvolution)
+
+const toConvolution = curry(_toConvolution)
 
 /**
  * From image bytes (0 - 255) to values between 0 and 1
- * @param  {UInt8Array} bytes
+ * @param  {Array<number>} bytes
  * @return {Array}      normalized values
  */
-function toNormalized(bytes) {
+function toNormalized(bytes: Array<number>): Array<number> {
   console.time('toNormalized')
 
   const normalized = []
@@ -148,14 +149,21 @@ function toNormalized(bytes) {
  * @param  {Array}  normalized
  * @return {Array}  denormlized
  */
-function toDenormalized(normalized) {
+function toDenormalized(normalized: Array<number>): Array<number> {
   console.time('toDenormalized')
   const denormalized =  normalized.map(value => value * 255)
   console.timeEnd('toDenormalized')
   return denormalized
 }
 
-function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) {
+function toGradientMagnitude(
+  xDerived: Array<number>,
+  yDerived: Array<number>,
+  width: number,
+  height: number,
+  ut = 0,
+  lt = 0): Array<number> {
+  
   console.time('toGradientMagnitude')
   const gradientMagnitude = []
   const gradientDirection = []
@@ -184,7 +192,7 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
   const gradientMagnitudeCapped = gradientMagnitude.map(x => x / max)
 
   if (ut === 0 && lt === 0) {
-    let res = getTresholds(gradientMagnitudeCapped, width, height)
+    let res = getTresholds(gradientMagnitudeCapped)
     ut = res.ut
     lt = res.lt
   }
@@ -227,14 +235,14 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
 
   // histeresis start
   let pomH = 0
-  let pomStaro = -1
-  let prolaz = 0
+  let pomOld = -1
+  let pass = 0
 
   let nastavi = true
   let gradientMagnitudeCappedBottom = []
   while ( nastavi ) {
-    prolaz = prolaz + 1;
-    pomStaro = pomH;
+    pass = pass + 1;
+    pomOld = pomH;
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         if (gradientMagnitudeUt[y * width + x] <= ut && gradientMagnitudeUt[y * width + x] >= lt) {
@@ -256,9 +264,9 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
     }
     
     if (MAX_PRECISION) {
-      nastavi = pomH != pomStaro;
+      nastavi = pomH != pomOld;
     } else {
-      nastavi = prolaz <= precision;
+      nastavi = pass <= precision;
     }
 
     gradientMagnitudeCappedBottom = gradientMagnitudeUt.map(x => x <= ut ? 0 : x)
@@ -268,11 +276,11 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
   return gradientMagnitudeCappedBottom
 }
 
-function getMax(values) {
+function getMax(values: Array<number>): number {
   return values.reduce((prev, now) => now > prev ? now : prev, -1)
 }
 
-function getTresholds(gradientMagnitude, dimx, dimy) {
+function getTresholds(gradientMagnitude: Array<number>): { ut: number, lt: number } {
   let sum = 0;
   let count = 0;
 
@@ -291,7 +299,7 @@ function getTresholds(gradientMagnitude, dimx, dimy) {
  * @param  {Array}  values
  * @return {Array}  expanded values
  */
-function toPixels(values) {
+function toPixels(values: Array<number>): Array<number> {
   console.time('toPixels')
   const expanded = []
   values.forEach(x => {

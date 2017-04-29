@@ -1,5 +1,7 @@
 importScripts('./main.js')
 
+interface Window { appData: any, imgData: any }
+
 self.appData = {}
 
 self.addEventListener('message', function (e) {
