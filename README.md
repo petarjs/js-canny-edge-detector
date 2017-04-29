@@ -4,6 +4,9 @@
 
 This is an implementation Canny Edge Detection algorithm in JavaScript. It's really just for fun. The story behind it is - I found an old faculty project written in C#, and decided to rewrite it in JS. I did it one evening, and it works! :D
 
+See it in action at  
+[https://github.com/petarjs/js-canny-edge-detector](https://github.com/petarjs/js-canny-edge-detector)
+
 ## Usage
 
 First, you load the worker:
