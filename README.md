@@ -6,6 +6,8 @@ This is an implementation Canny Edge Detection algorithm in JavaScript. It's rea
 
 P.S. You can see the original C# implementation we did here - [https://github.com/petarjs/cs-canny-edge-detector](https://github.com/petarjs/cs-canny-edge-detector)!
 
+## Demo
+
 See it in action at  
 [https://petarjs.github.io/js-canny-edge-detector/](https://petarjs.github.io/js-canny-edge-detector/)
 
