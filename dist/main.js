@@ -126,7 +126,7 @@ function toDenormalized(normalized) {
     console.timeEnd('toDenormalized');
     return denormalized;
 }
-function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) {
+function toGradientMagnitude(xDerived, yDerived, width, height, lt = 0, ut = 0) {
     console.time('toGradientMagnitude');
     const gradientMagnitude = [];
     const gradientDirection = [];
@@ -153,7 +153,7 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
     }
     const max = getMax(gradientMagnitude);
     const gradientMagnitudeCapped = gradientMagnitude.map(x => x / max);
-    if (ut === 0 && lt === 0) {
+    if (!ut && !lt) {
         let res = getTresholds(gradientMagnitudeCapped);
         ut = res.ut;
         lt = res.lt;
@@ -225,7 +225,13 @@ function toGradientMagnitude(xDerived, yDerived, width, height, ut = 0, lt = 0) 
         gradientMagnitudeCappedBottom = gradientMagnitudeUt.map(x => x <= ut ? 0 : x);
     }
     console.timeEnd('toGradientMagnitude');
-    return gradientMagnitudeCappedBottom;
+    return {
+        data: gradientMagnitudeCappedBottom,
+        threshold: {
+            ut: ut,
+            lt: lt
+        }
+    };
 }
 function getMax(values) {
     return values.reduce((prev, now) => now > prev ? now : prev, -1);

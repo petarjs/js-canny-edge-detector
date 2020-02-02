@@ -162,8 +162,8 @@ function toGradientMagnitude(
   yDerived: Array<number>,
   width: number,
   height: number,
-  ut = 0,
-  lt = 0): Array<number> {
+  lt = 0,
+  ut = 0): any {
   
   console.time('toGradientMagnitude')
   const gradientMagnitude = []
@@ -192,7 +192,7 @@ function toGradientMagnitude(
   const max = getMax(gradientMagnitude)
   const gradientMagnitudeCapped = gradientMagnitude.map(x => x / max)
 
-  if (ut === 0 && lt === 0) {
+  if (!ut && !lt) {
     let res = getTresholds(gradientMagnitudeCapped)
     ut = res.ut
     lt = res.lt
@@ -274,7 +274,14 @@ function toGradientMagnitude(
   }
 
   console.timeEnd('toGradientMagnitude')
-  return gradientMagnitudeCappedBottom
+  return {
+    data: gradientMagnitudeCappedBottom,
+    threshold: {
+      ut: ut,
+      lt: lt
+    }
+  }
+    
 }
 
 function getMax(values: Array<number>): number {
