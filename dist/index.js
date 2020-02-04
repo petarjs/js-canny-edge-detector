@@ -107,6 +107,10 @@ function activateImage(className) {
     }
     document.querySelector(`.${className}`).classList.add(`image--active`);
 }
+function showThresholds(thresh) {
+    $ut.value = thresh.ut;
+    $lt.value = thresh.lt;
+}
 function onWorkerMessage(e) {
     const drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height);
     if (e.data.type === 'grayscale') {
@@ -135,6 +139,7 @@ function onWorkerMessage(e) {
     else if (e.data.type === 'gradientMagnitude') {
         setProcessingStatus('7/7 Calculated Gradient magnitude');
         drawBytesOnCanvasForImg(canvasResult, e.data.data);
+        showThresholds(e.data.threshold);
         activateImage('js_image--result');
         setProcessingStatus('Done!');
         unblockControls();

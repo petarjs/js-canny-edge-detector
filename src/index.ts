@@ -25,7 +25,7 @@ function initWorker () {
 }
 
 $file.addEventListener('change', event => {
-  const file = $file.files[0]
+  const file = $file.files[0] 
   readFileAsDataURL(file)
     .then(loadImage)
     .then(setCanvasSizeFromImage(canvasFrom))
@@ -127,6 +127,12 @@ function activateImage (className) {
   document.querySelector(`.${className}`).classList.add(`image--active`)
 }
 
+function showThresholds(thresh){
+  $ut.value = thresh.ut;
+  $lt.value = thresh.lt;
+
+}
+
 function onWorkerMessage (e: ServiceWorkerMessageEvent) {
   const drawBytesOnCanvasForImg = drawBytesOnCanvas(window.appData.width, window.appData.height)
 
@@ -151,6 +157,7 @@ function onWorkerMessage (e: ServiceWorkerMessageEvent) {
   } else if (e.data.type === 'gradientMagnitude') {
     setProcessingStatus('7/7 Calculated Gradient magnitude')
     drawBytesOnCanvasForImg(canvasResult, e.data.data)
+    showThresholds(e.data.threshold)
     activateImage('js_image--result')
     setProcessingStatus('Done!')
     unblockControls()

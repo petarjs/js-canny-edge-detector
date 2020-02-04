@@ -45,5 +45,9 @@ function start () {
     self.appData.lt,
     self.appData.ut
   )
-  self.postMessage({ type: 'gradientMagnitude', data: toPixels(toDenormalized(gradientMagnitude)) })
+  self.postMessage({ 
+    type: 'gradientMagnitude', 
+    data: toPixels(toDenormalized(gradientMagnitude.data)),
+    threshold: gradientMagnitude.threshold
+  })
 }
